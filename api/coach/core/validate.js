@@ -144,6 +144,9 @@ export function validatePlan(data, ctx = {}) {
       if (e.bodyweight != null) clean.bodyweight = !!e.bodyweight;
       if (perSide) clean.side = true;
       if (isStr(e.sg)) clean.sg = clampStr(e.sg, 20);
+      // fork(claude-chat): the exercise's own rest, which the app already supports (plan-share
+      // carries it, mergePlan keeps it). Bounded like the app's own picker would.
+      if (isInt(e.restSec, 15, 600)) clean.restSec = e.restSec;
       if (isStr(e.why)) clean.why = clampStr(e.why, 400);
       // The same exercise twice in one routine has no honest reading: `reorder` can never be
       // satisfied again (it demands each id once), and every targeted change resolves to

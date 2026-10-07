@@ -382,3 +382,15 @@ test('provider "Claude (chat)": the Coach is on with no model; in-app jobs point
   const st = await (await fetch(`${h.api}/api/coach/status`, { headers: { Cookie: cookie() } })).json();
   assert.equal(st.pending, null);
 });
+
+test('a plan carries each exercise\'s own rest, clamped to the picker\'s range', async () => {
+  const { validatePlan } = await import('../coach/core/validate.js');
+  const plan = { week: { 1: 'a' }, routines: [{ id: 'a', name: 'A', ex: [
+    { id: '0025', sets: 3, mode: 'reps', reps: 8, restSec: 180 },
+    { id: '0031', sets: 3, mode: 'reps', reps: 12, restSec: 5 },
+    { id: '0043', sets: 3, mode: 'reps', reps: 8, restSec: 90.5 }
+  ] }] };
+  const v = validatePlan(plan, {});
+  assert.ok(v.ok);
+  assert.deepEqual(v.bundle.routines[0].ex.map(e => e.restSec), [180, undefined, undefined]);
+});
