@@ -196,6 +196,7 @@ export function clampMessage(text) {
  */
 export function enqueue(uid, opts) {
   if (!cfgStore.isEnabled() || !cfgStore.isConnected()) throw new CoachError('off', 'the Coach is not set up on this instance');
+  if (cfgStore.providerMeta().chatOnly) throw new CoachError('chat', CHAT_ONLY_MESSAGE);   // fork(claude-chat)
   if (inflight.has(uid)) throw new CoachError('busy', 'the Coach is already thinking about your training');
 
   const S = readState(uid);
@@ -385,6 +386,10 @@ async function execute(job) {
     if (jobDir) removeJobDir(jobDir, unprivilegedIds());
   }
 }
+
+// fork(claude-chat): what the app says when someone asks the in-app Coach for a job while the
+// provider is "Claude (chat)" — there is no model on this server; the chat is where to ask.
+export const CHAT_ONLY_MESSAGE = 'Este Coach funciona pelo chat do Claude: peça seu plano ou ajustes numa conversa com o conector openGym, e a proposta aparece aqui. (This Coach runs through Claude chat — ask there.)';
 
 /* ---------- fork(claude-chat): a proposal that arrives already made ----------
    The Claude chat connector (chat-bridge/) produces a proposal in a conversation rather than a

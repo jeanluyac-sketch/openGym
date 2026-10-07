@@ -49,6 +49,9 @@ export const COACH_DISABLED = /^(1|true|yes|on)$/i.test(process.env.COACH_DISABL
 // can be exercised end to end without an AI account.
 export const PROVIDERS = {
   fixture: { label: 'Fixture (testing)', runtime: 'Fixture', apiKeyEnv: null, oauthEnv: null },
+  // fork(claude-chat): no model in the app at all. Plans arrive from Claude in a chat through
+  // the connector (chat-bridge/), so the provider is always "connected" and refuses every job.
+  'claude-chat': { label: 'Claude (chat)', runtime: 'Claude chat connector', apiKeyEnv: null, oauthEnv: null, chatOnly: true },
   // `apiKeyEnv` / `oauthEnv` name the variable jobEnv injects the credential as; the runtime
   // reads it from its environment and from nothing else, which is what makes the sanitised env
   // the only channel a credential can travel down. `claude setup-token` mints the long-lived
@@ -232,7 +235,7 @@ export const SHARED_ACCOUNT_REFUSAL =
  */
 export function credentialFor(uid) {
   const cfg = load();
-  if (cfg.provider === 'fixture') return { ok: true, auth: null, mode: cfg.authMode };
+  if (cfg.provider === 'fixture' || providerMeta(cfg).chatOnly) return { ok: true, auth: null, mode: cfg.authMode };   // fork(claude-chat)
 
   if (cfg.authMode === 'profile') {
     const rec = loadProfileAuth(uid);
@@ -307,7 +310,7 @@ export function isEnabled() {
 export function isConnected() {
   const cfg = load();
   if (!isEnabled()) return false;
-  if (cfg.provider === 'fixture') return true;
+  if (cfg.provider === 'fixture' || providerMeta(cfg).chatOnly) return true;   // fork(claude-chat)
   if (cfg.authMode === 'profile') return true;
   const rec = authFor(cfg);
   if (!rec) return !!providerMeta(cfg).keyOptional && !!baseUrlFor(cfg.provider, cfg);

@@ -45,6 +45,9 @@ const fixture = {
    lazily: on the default image the module loads, check() reports the runtime as absent, and
    isConnected() keeps the Coach out of /api/config entirely. Codex is here too, and unlike
    the SDK its runtime is a CLI binary, so its absence shows up as a spawn error from check(). */
-const ADAPTERS = { fixture, claude, codex, anthropic, openai, gemini, compatible };
+// fork(claude-chat): the chat-only provider runs nothing; "Test the Coach" just confirms it.
+const chatOnly = { id: 'claude-chat', spawns: false, async check() { return { ok: true, version: 'claude-chat' }; },
+  async invoke() { return { code: 0, text: '{"coach_contract":1,"ok":true}' }; } };
+const ADAPTERS = { fixture, claude, codex, anthropic, openai, gemini, compatible, 'claude-chat': chatOnly };
 export const adapterFor = provider => ADAPTERS[provider] || null;
 export default ADAPTERS;

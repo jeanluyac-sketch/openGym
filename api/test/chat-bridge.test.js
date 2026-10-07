@@ -25,7 +25,7 @@ function mintSession(uid, sv = 0) {
 // ORIGIN is https, so the server names its cookie __Host-gymsid; it still accepts the legacy name.
 const cookie = (uid = UID, sv = 0) => `__Host-gymsid=${mintSession(uid, sv)}`;
 
-async function startServer(t, { coach = true, env = {} } = {}) {
+async function startServer(t, { coach = true, provider = 'fixture', env = {} } = {}) {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gym-chat-'));
   fs.writeFileSync(path.join(dataDir, 'secret'), SECRET, { mode: 0o600 });
   fs.writeFileSync(path.join(dataDir, 'db.json'), JSON.stringify({
@@ -33,7 +33,7 @@ async function startServer(t, { coach = true, env = {} } = {}) {
     creds: [], subs: [], invites: []
   }));
   fs.writeFileSync(path.join(dataDir, `state-${UID}.json`), JSON.stringify(sampleState({ lang: 'pt-BR' })));
-  if (coach) fs.writeFileSync(path.join(dataDir, 'coach.json'), JSON.stringify({ enabled: true, provider: 'fixture' }));
+  if (coach) fs.writeFileSync(path.join(dataDir, 'coach.json'), JSON.stringify({ enabled: true, provider }));
   const child = spawn(process.execPath, ['server.js'], {
     cwd: API, stdio: ['ignore', 'pipe', 'pipe'],
     env: { ...process.env, PORT: '0', DATA_DIR: dataDir, ORIGIN, RP_ID: 'gym.example.test', AUDIT_LOG: '1', ...env }
@@ -365,4 +365,20 @@ test('a refresh retried right after rotation is refused without ending the conne
   // An impossible loopback port is refused at registration instead of a 500 later.
   const bad = await fetch(`${h.api}/api/oauth/register`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ redirect_uris: ['http://localhost:99999/callback'] }) });
   assert.equal(bad.status, 400);
+});
+
+test('provider "Claude (chat)": the Coach is on with no model; in-app jobs point to the chat, chat proposals land', async t => {
+  const h = await startServer(t, { provider: 'claude-chat' });
+  const cfg = await (await fetch(`${h.api}/api/config`, { headers: { Cookie: cookie() } })).json();
+  assert.ok(cfg.coach, 'the Coach UI exists on this instance');
+  const job = await fetch(`${h.api}/api/coach/plan`, { method: 'POST', headers: { Cookie: cookie(), 'Content-Type': 'application/json', 'Sec-Fetch-Site': 'same-origin' }, body: '{}' });
+  assert.equal(job.status, 400);
+  const body = await job.json();
+  assert.equal(body.code, 'chat');
+  assert.match(body.error, /chat do Claude/);
+  const { tokens } = await connect(h);
+  const ctx = toolJson(await rpc(h, tokens.access_token, 'tools/call', { name: 'get_coach_context', arguments: {} }));
+  assert.equal(ctx.coachEnabled, true);
+  const st = await (await fetch(`${h.api}/api/coach/status`, { headers: { Cookie: cookie() } })).json();
+  assert.equal(st.pending, null);
 });

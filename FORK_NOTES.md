@@ -15,7 +15,9 @@ Cada linha alterada num arquivo do original é marcada com `fork(claude-chat)`.
 | Arquivo | Mudança | Se der conflito |
 |---|---|---|
 | `api/server.js` | 1 `import` de `./coach/chat-bridge/index.js` logo abaixo do `import { coachRoutes }`, e 2 linhas logo abaixo de `...coachRoutes(...)` na tabela `routes`, espalhando `chatBridgeRoutes({ dataDir: DATA, origin: ORIGIN, readSession, findUser, audit })`. | Aceite a versão do original e recoloque as 3 linhas nos mesmos lugares. Se `readSession`, `audit`, `db.users`, `DATA` ou `ORIGIN` mudarem de nome, ajuste os argumentos. |
-| `api/coach/jobs.js` | Função nova `submitProposal()` antes da seção `decisions`. Usa `readUser`, `writeUser`, `inflight`, `onProposal`, `hashPlan`, `payloadLib.canonicalPlan`, `PENDING_DAYS`, `HISTORY_MAX`, `CoachError`. | Aceite a versão do original e recoloque a função. Se o formato de `pending` mudou em `execute()`, copie o novo formato (é o mesmo objeto, sem a parte do provedor). |
+| `api/coach/config.js` | Provedor `claude-chat` na tabela `PROVIDERS` (logo abaixo de `fixture`, com `chatOnly: true`) e `|| providerMeta(cfg).chatOnly` nos testes de `fixture` em `credentialFor()` e `isConnected()`. | Recoloque a linha da tabela e as duas condições. |
+| `api/coach/adapters/index.js` | Adaptador `chatOnly` que não roda nada, registrado como `'claude-chat'` em `ADAPTERS`. | Recoloque o objeto e a chave. |
+| `api/coach/jobs.js` | Em `enqueue()`, primeira linha recusa jobs quando o provedor é `chatOnly` (`CoachError('chat', CHAT_ONLY_MESSAGE)`). Função nova `submitProposal()` antes da seção `decisions`. Usa `readUser`, `writeUser`, `inflight`, `onProposal`, `hashPlan`, `payloadLib.canonicalPlan`, `PENDING_DAYS`, `HISTORY_MAX`, `CoachError`. | Aceite a versão do original e recoloque a função. Se o formato de `pending` mudou em `execute()`, copie o novo formato (é o mesmo objeto, sem a parte do provedor). |
 
 ## Arquivos novos (não conflitam)
 

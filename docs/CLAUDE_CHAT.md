@@ -39,9 +39,12 @@ Você ── conversa ──▶ Claude (claude.ai)
 
 ## Configuração (uma vez)
 
-1. **Ligue o Coach no app** (só administradores): *Configurações → Admin dashboard → AI Coach*.
-   Qualquer provedor serve (por exemplo Gemini com chave gratuita). Ele é necessário porque é
-   a tela do Coach que mostra a proposta.
+1. **Ligue o Coach com o provedor "Claude (chat)"** — sem chave e sem nenhum modelo no servidor.
+   O painel do admin não mostra esse provedor como botão; grave no servidor
+   `./data/coach.json` com `{"enabled": true, "provider": "claude-chat"}` e reinicie a api
+   (`docker compose up -d --force-recreate api`). Com ele, pedir algo ao Coach dentro do app só
+   mostra o aviso "peça no chat do Claude"; as propostas chegam pelo conector. (Qualquer outro
+   provedor também funciona, se você quiser o Coach do app respondendo sozinho.)
 2. **Abra a tela Coach** no app, aceite o aviso e responda às perguntas (objetivo, dias,
    equipamento, limitações). O Claude usa essas respostas; dá para complementar no chat.
 3. **Encaminhe `/.well-known/` para a api.** O Claude descobre o servidor de autorização em
