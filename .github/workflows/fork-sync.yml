@@ -1,0 +1,142 @@
+# fork(claude-chat) — keeps this fork up to date with the original project.
+#
+# Once a week (and on demand): merge DuarteSantos8/openGym's main into this fork's main, run
+# the api, mcp and frontend test suites on the result, and only then push it. A push to main is
+# what publishes new images (docker-publish.yml), and the server pulls the newest image every
+# night, so a clean week updates the whole stack without anyone touching it.
+#
+# What it never does on its own:
+#   - resolve a merge conflict. The merge is aborted, nothing is pushed, and an issue labelled
+#     `sync-conflict` says which files collided. The server keeps running the last good image.
+#   - push a merge whose tests fail. It goes to the branch `sync/upstream` instead, with an
+#     issue labelled `sync-tests-failed`.
+#
+# A push made with GITHUB_TOKEN does not trigger other workflows, so the image build is started
+# explicitly at the end (workflow_dispatch is the one event GITHUB_TOKEN may trigger). And
+# GITHUB_TOKEN may not create or change files under .github/workflows: when upstream changed
+# one of those, the push is refused and an issue labelled `sync-manual` asks for the
+# "Sync fork" button (or for the weekly check-in to do it).
+name: Sync with upstream
+
+on:
+  schedule:
+    - cron: '17 6 * * 1'   # Mondays 06:17 UTC (03:17 in São Paulo)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+  actions: write
+
+concurrency:
+  group: fork-sync
+  cancel-in-progress: false
+
+env:
+  UPSTREAM: https://github.com/DuarteSantos8/openGym.git
+
+jobs:
+  sync:
+    # Only in a fork: the original repository has nothing to sync with.
+    if: github.repository != 'DuarteSantos8/openGym'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Merge upstream main
+        id: merge
+        run: |
+          git config user.name  "fork-sync[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git remote add upstream "$UPSTREAM"
+          git fetch --no-tags upstream main
+          if git merge-base --is-ancestor upstream/main HEAD; then
+            echo "Already up to date with upstream."
+            echo "result=uptodate" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "upstream=$(git rev-parse --short upstream/main)" >> "$GITHUB_OUTPUT"
+          git log --oneline HEAD..upstream/main | head -50 > /tmp/incoming.txt
+          if git merge --no-edit upstream/main; then
+            echo "result=merged" >> "$GITHUB_OUTPUT"
+          else
+            git diff --name-only --diff-filter=U > /tmp/conflicts.txt
+            git merge --abort
+            echo "result=conflict" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Report a conflict
+        if: steps.merge.outputs.result == 'conflict'
+        run: |
+          gh label create sync-conflict --color B60205 --description "Upstream merge needs a human" 2>/dev/null || true
+          {
+            echo "A atualização semanal com o projeto original (upstream \`${{ steps.merge.outputs.upstream }}\`) bateu de frente com as mudanças deste fork."
+            echo
+            echo "**Nada foi publicado.** O servidor continua rodando a última versão boa."
+            echo
+            echo "Arquivos em conflito:"
+            sed 's/^/- `/; s/$/`/' /tmp/conflicts.txt
+            echo
+            echo "Commits novos do original:"
+            echo '```'
+            cat /tmp/incoming.txt
+            echo '```'
+            echo
+            echo "Veja FORK_NOTES.md para saber o que este fork muda em cada arquivo."
+          } > /tmp/body.md
+          gh issue create --title "Sincronização com o original: conflito ($(date -u +%F))" --label sync-conflict --body-file /tmp/body.md
+          exit 1
+
+      - uses: actions/setup-node@v7
+        if: steps.merge.outputs.result == 'merged'
+        with:
+          node-version: 22
+
+      - name: Test the merged tree
+        id: tests
+        if: steps.merge.outputs.result == 'merged'
+        continue-on-error: true
+        run: |
+          set -e
+          (cd api && npm ci --omit=optional && npm test)
+          node scripts/build-coach-assets.mjs --check
+          node api/scripts/check-core-loadable.mjs
+          (cd mcp && npm ci && npm test)
+          (cd frontend && npm ci --ignore-scripts && npm test && npm run build)
+
+      - name: Tests failed — park the merge on a branch
+        if: steps.merge.outputs.result == 'merged' && steps.tests.outcome == 'failure'
+        run: |
+          git push --force origin HEAD:refs/heads/sync/upstream || true
+          gh label create sync-tests-failed --color D93F0B --description "Upstream merge fails the tests" 2>/dev/null || true
+          {
+            echo "A atualização com o original (\`${{ steps.merge.outputs.upstream }}\`) entrou sem conflito, mas **os testes falharam**, então nada foi publicado."
+            echo
+            echo "O resultado da fusão está no branch \`sync/upstream\`. Log: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          } > /tmp/body.md
+          gh issue create --title "Sincronização com o original: testes falharam ($(date -u +%F))" --label sync-tests-failed --body-file /tmp/body.md
+          exit 1
+
+      - name: Publish the merge
+        if: steps.merge.outputs.result == 'merged' && steps.tests.outcome == 'success'
+        run: |
+          if git push origin HEAD:main; then
+            gh workflow run docker-publish.yml --ref main
+            echo "Merged upstream ${{ steps.merge.outputs.upstream }} and started the image build."
+          else
+            gh label create sync-manual --color FBCA04 --description "Needs the Sync fork button" 2>/dev/null || true
+            {
+              echo "A atualização com o original (\`${{ steps.merge.outputs.upstream }}\`) passou nos testes, mas o GitHub não deixa este robô gravar as mudanças"
+              echo "(normalmente porque o original alterou arquivos em \`.github/workflows/\`)."
+              echo
+              echo "Para concluir: na página do repositório, clique em **Sync fork → Update branch**. A imagem nova é publicada sozinha em seguida."
+            } > /tmp/body.md
+            gh issue create --title "Sincronização com o original: precisa de um clique ($(date -u +%F))" --label sync-manual --body-file /tmp/body.md
+            exit 1
+          fi

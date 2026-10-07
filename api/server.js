@@ -16,6 +16,7 @@ import webpush from 'web-push';
 import * as coachConfig from './coach/config.js';
 import * as coachJobs from './coach/jobs.js';
 import { coachRoutes } from './coach/routes.js';
+import { chatBridgeRoutes } from './coach/chat-bridge/index.js'; // fork(claude-chat)
 import { startCadence } from './coach/cadence.js';
 import { startWarmup } from './coach/warmup.js';
 import { dayReminderPush, restTimerPush, testPush } from './push-messages.js';
@@ -2341,6 +2342,8 @@ const routes = {
   // them: they are closures over db and SECRET, and passing them in keeps that module free of
   // a cycle. Every one of them is inert while the feature is unconfigured.
   ...coachRoutes({ json, readBody, readSession, requireAdmin }),
+  // fork(claude-chat): OAuth + remote MCP for Claude's custom connector (docs/CLAUDE_CHAT.md).
+  ...chatBridgeRoutes({ dataDir: DATA, origin: ORIGIN, readSession, findUser: uid => db.users.find(u => u.id === uid) || null, audit }),
 
   /* ---------- photos & videos ---------- */
   // Absent, not refusing, when MEDIA_UPLOADS=0: a 404 is what a server from before the feature

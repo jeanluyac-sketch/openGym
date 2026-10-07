@@ -386,6 +386,37 @@ async function execute(job) {
   }
 }
 
+/* ---------- fork(claude-chat): a proposal that arrives already made ----------
+   The Claude chat connector (chat-bridge/) produces a proposal in a conversation rather than a
+   job: it has already been through the same validator a job's answer goes through, so all that
+   is left is to hold it exactly where a job's result is held, for the same client screen to
+   show. One pending slot per profile, as always: a waiting proposal is replaced, and the
+   replaced one is written into the history as `superseded` rather than vanishing. A job that
+   is queued or running wins — its result would otherwise overwrite this one a moment later. */
+export function submitProposal(uid, { kind, result, S, source = 'claude-chat' }) {
+  if (kind !== 'create' && kind !== 'review') throw new CoachError('invalid', 'unknown proposal kind');
+  if (inflight.has(uid)) throw new CoachError('busy', 'the in-app Coach is working on a request right now — try again in a minute');
+  const rec = readUser(uid);
+  const t = Date.now();
+  let history = rec.history || [];
+  if (rec.pending) history = [...history, { id: rec.pending.id, kind: rec.pending.kind, outcome: 'superseded', at: t }];
+  const id = crypto.randomBytes(8).toString('hex');
+  const pending = {
+    id, kind, createdAt: t, expiresAt: t + PENDING_DAYS * 86400000,
+    planHash: hashPlan(payloadLib.canonicalPlan(S || readState(uid) || {})),
+    iteration: 1, source,
+    ...result
+  };
+  history = [...history, { id, kind, trigger: source, outcome: 'ready', at: t }].slice(-HISTORY_MAX);
+  // Not written to the instance job log (cfgStore.logJob): that log is the admin's record of
+  // provider runs and what "last success" is read from, and no provider ran here.
+  writeUser(uid, { ...rec, pending, history });
+  if (onProposal) {
+    try { onProposal(uid, pending, { id, uid, kind, trigger: source }); } catch (e) { console.error('coach notify failed', e); }
+  }
+  return pending;
+}
+
 /* ---------- decisions ---------- */
 
 /** The client has applied (or discarded) the pending proposal. Record it and clear. */
