@@ -18,6 +18,7 @@ Cada linha alterada num arquivo do original é marcada com `fork(claude-chat)`.
 | `api/coach/config.js` | Provedor `claude-chat` na tabela `PROVIDERS` (logo abaixo de `fixture`, com `chatOnly: true`) e `|| providerMeta(cfg).chatOnly` nos testes de `fixture` em `credentialFor()` e `isConnected()`. | Recoloque a linha da tabela e as duas condições. |
 | `api/coach/adapters/index.js` | Adaptador `chatOnly` que não roda nada, registrado como `'claude-chat'` em `ADAPTERS`. | Recoloque o objeto e a chave. |
 | `api/coach/core/validate.js` | Em `validatePlan()`, uma linha aceita `restSec` (15–600 s) por exercício, logo após a linha do `sg`. | Recoloque a linha. |
+| `frontend/src/lib/plates.js` | 2 kg e 3 kg acrescentados a `PLATE_SIZES.kg` (aparecem no editor de Anilhas) e a `UNCOMMON.kg`, pra o rack padrão não mudar. Marcado com `fork(claude-chat-plates)`. Teste em `plates.test.js`. | Mantenha a lista do original e acrescente `2` e `3` nas duas listas. |
 | `api/coach/jobs.js` | Em `enqueue()`, primeira linha recusa jobs quando o provedor é `chatOnly` (`CoachError('chat', CHAT_ONLY_MESSAGE)`). Função nova `submitProposal()` antes da seção `decisions`. Usa `readUser`, `writeUser`, `inflight`, `onProposal`, `hashPlan`, `payloadLib.canonicalPlan`, `PENDING_DAYS`, `HISTORY_MAX`, `CoachError`. | Aceite a versão do original e recoloque a função. Se o formato de `pending` mudou em `execute()`, copie o novo formato (é o mesmo objeto, sem a parte do provedor). |
 
 ## Arquivos novos (não conflitam)

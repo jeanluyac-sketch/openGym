@@ -16,11 +16,11 @@ import { weightIncrement } from './progression.js'
 
 /** The plate sizes the inventory editor lists, heaviest first, per unit. */
 export const PLATE_SIZES = {
-  kg: [25, 20, 15, 10, 5, 2.5, 1.25, 0.5],
+  kg: [25, 20, 15, 10, 5, 3, 2.5, 2, 1.25, 0.5], // fork(claude-chat-plates): 3 and 2 kg added
   lb: [45, 35, 25, 15, 10, 5, 2.5, 1.25],
 }
 /** Sizes a gym without an inventory of its own is assumed NOT to have. */
-const UNCOMMON = { kg: new Set([0.5]), lb: new Set([15, 1.25]) }
+const UNCOMMON = { kg: new Set([3, 2, 0.5]), lb: new Set([15, 1.25]) } // fork(claude-chat-plates): 3 and 2 kg here too
 /** Pairs of each size the default inventory holds — plenty, the way a rack is. */
 export const DEFAULT_PAIRS = 6
 

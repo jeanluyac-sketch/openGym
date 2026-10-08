@@ -17,6 +17,14 @@ describe('inventoryFor', () => {
     expect(inventoryFor({}).map(p => p.w)).toEqual(kg.map(p => p.w))   // kg when unset
   })
 
+  test('the editor lists 2 and 3 kg plates, but a standard kg rack does not assume them', () => {
+    expect(PLATE_SIZES.kg).toContain(2)
+    expect(PLATE_SIZES.kg).toContain(3)
+    expect(inventoryFor({ unit: 'kg' }).map(p => p.w)).not.toContain(2)
+    expect(inventoryFor({ unit: 'kg' }).map(p => p.w)).not.toContain(3)
+    expect(inventoryFor({ unit: 'kg', plates: { kg: { 3: 2, 2: 3, 20: 2 } } }).map(p => p.w)).toEqual([20, 3, 2])
+  })
+
   test('the editor lists every size, the inventory only what you have', () => {
     expect(PLATE_SIZES.lb).toContain(15)
     expect(homeInv.map(p => p.w)).toEqual([45, 35, 25, 15, 10, 5, 2.5])
