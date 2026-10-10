@@ -876,6 +876,7 @@ export default {
   'Move up': 'เลื่อนขึ้น',
   'Move down': 'เลื่อนลง',
   'Swap exercise': 'สลับท่าออกกำลังกาย',
+  'Same muscle': 'กล้ามเนื้อเดียวกัน',
   'Swap exercise?': 'สลับท่าออกกำลังกาย?',
   'Logged sets stay with the original exercise. Choose where the replacement belongs.': 'เซ็ตที่บันทึกแล้วจะอยู่กับท่าเดิม เลือกว่าจะวางท่าใหม่ไว้ตรงไหน',
   'Keep replacement in this group': 'เก็บท่าใหม่ไว้ในกลุ่มนี้',

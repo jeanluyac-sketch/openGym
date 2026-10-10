@@ -733,6 +733,7 @@ export default {
   'Move up': 'تحريك لأعلى',
   'Move down': 'تحريك لأسفل',
   'Swap exercise': 'استبدال التمرين',
+  'Same muscle': 'نفس العضلة',
   'Swap exercise?': 'استبدال التمرين؟',
   'Logged sets stay with the original exercise. Choose where the replacement belongs.': 'تبقى المجموعات المسجلة مع التمرين الأصلي. اختر مكان التمرين البديل.',
   'Keep replacement in this group': 'إبقاء البديل في هذه المجموعة',

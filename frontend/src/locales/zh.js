@@ -109,6 +109,7 @@ export default {
   'Add to routine': '加入训练日',
   'Remove exercise': '移除动作',
   'Swap exercise': '更换动作',
+  'Same muscle': '相同肌肉',
   'Swap exercise?': '要更换动作吗？',
   'Logged sets stay with the original exercise. Choose where the replacement belongs.': '已记录的组数会保留在原动作上。请选择替换动作的位置。',
   'Keep replacement in this group': '将替换动作保留在此组',

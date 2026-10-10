@@ -39,6 +39,7 @@ import { isWarmupRow, hasCompletedWork } from './lib/workout-model.js'
 import { saveSessionAsRoutine } from './lib/session-routines.js'
 import { nextUnfinishedUnit } from './lib/supersetFlow.js'
 import { swapActiveExercise } from './lib/active-exercise-swap.js'
+import { similarExercises, similarKey } from './lib/similar-exercises.js' // fork(claude-chat-swap)
 import { useSheetKeyboard, useRevealActiveChip, tappable } from './lib/use-sheet-keyboard.js'
 import { isFav, toggleFav, sortFavouritesFirst } from './lib/favourites.js'
 import { buildSessionEntries, buildPlannedEntry, builtOutOfProgression } from './lib/session-start.js'
@@ -1080,7 +1081,7 @@ function usageMap(st) {
   st.workouts.forEach(w => w.entries.forEach(e => { u[e.id] = (u[e.id] || 0) + 1 }))
   return u
 }
-function ExercisePicker({ onPick, title, close }) {
+function ExercisePicker({ onPick, title, like, close }) { // fork(claude-chat-swap): `like`
   const st = useStore(s => s.S)
   const usage = usageMap(st)
   const [q, setQ] = useState('')
@@ -1089,25 +1090,28 @@ function ExercisePicker({ onPick, title, close }) {
   const [showAll, setShowAll] = useState(false)
   const [shown, setShown] = useState(50)
   const [byMuscle, setByMuscle] = useState(false)
+  const [similar, setSimilar] = useState(!!like) // fork(claude-chat-swap): start on the same muscle
   const searchRef = useRef(null)
   const bpStrip = useRef(null), eqStrip = useRef(null)
   const onSearchFocus = useSheetKeyboard(searchRef)
   const all = allExercises(st)
   const profile = activeProfile(st)
   const inScope = e => bp === '★' ? usage[e.id] : bp === '☆' ? isFav(st, e.id) : (!bp || e.bp === bp)
-  let base = searchExercises(all.filter(inScope), q)
+  // fork(claude-chat-swap): same-muscle view, best match first (lib/similar-exercises.js)
+  let base = similar && like ? searchExercises(similarExercises(like, all), q) : searchExercises(all.filter(inScope), q)
   if (bp === '★') base = [...base].sort((a, b) => (usage[b.id] - usage[a.id]) || exerciseNameFor(a).localeCompare(exerciseNameFor(b)))
   const eqFiltered = (profile && !showAll) ? base.filter(e => exAvailable(st, e)) : base
   const eqOpts = equipmentOf(eqFiltered)
   // Drop the equipment filter if the search narrowed it away, so you never hit a dead end.
   const eqOn = eqOpts.includes(eq) ? eq : ''
   // Favourites float to the top of whatever the filters left (issue #6), the rest keeps its order.
-  const f = sortFavouritesFirst(eqOn ? eqFiltered.filter(e => e.eq === eqOn) : eqFiltered, st)
+  const eqList = eqOn ? eqFiltered.filter(e => e.eq === eqOn) : eqFiltered
+  const f = similar && like ? eqList : sortFavouritesFirst(eqList, st) // fork(claude-chat-swap): keep the match order
   const chosenCount = Object.keys(usage).length
   const favCount = (st.favEx || []).length
   const special = bp === '★' || bp === '☆'
   // The Library's live result count (GitLab !31), for the same reason: how many are left.
-  const narrowed = !!(q.trim() || bp || eqOn)
+  const narrowed = !!(q.trim() || bp || eqOn || (similar && like)) // fork(claude-chat-swap)
   useRevealActiveChip(bpStrip, bp)
   useRevealActiveChip(eqStrip, eqOn)
   if (byMuscle) return <>
@@ -1138,10 +1142,11 @@ function ExercisePicker({ onPick, title, close }) {
         without forgetting the choice (issue #71). The favourites/chosen chips still clear it —
         those are cross-body-part views where a stale equipment filter would be confusing. */}
     <div className="chips" ref={bpStrip} style={{ margin: eqOpts.length > 1 ? '10px 0 6px' : '10px 0' }}>
-      {favCount > 0 && <button className={'chip' + (bp === '☆' ? ' on' : '')} onClick={() => { setBp('☆'); setEq(''); setShown(50) }}><Icon name="starFill" className="fav-star" />{t('Favourites')} ({favCount})</button>}
-      {chosenCount > 0 && <button className={'chip' + (bp === '★' ? ' on' : '')} onClick={() => { setBp('★'); setEq(''); setShown(50) }}><Icon name="starFill" style={{ fontSize: 12, display: 'inline-block', marginInlineEnd: 4, verticalAlign: '-1px' }} />{t('Chosen')} ({chosenCount})</button>}
-      <button className={'chip nocap' + (!bp ? ' on' : '')} onClick={() => { setBp(''); setShown(50) }}>{t('All')}</button>
-      {BODYPARTS.map(b => <button key={b} className={'chip' + (bp === b ? ' on' : '')} onClick={() => { setBp(b); setShown(50) }}>{t(b)}</button>)}
+      {like && <button className={'chip nocap' + (similar ? ' on' : '')} onClick={() => { setSimilar(v => !v); setBp(''); setEq(''); setShown(50) }}>{t('Same muscle')}: {t(MUSCLE_NAME[similarKey(like)] || similarKey(like))}</button>}{/* fork(claude-chat-swap) */}
+      {favCount > 0 && <button className={'chip' + (bp === '☆' ? ' on' : '')} onClick={() => { setBp('☆'); setSimilar(false); setEq(''); setShown(50) }}><Icon name="starFill" className="fav-star" />{t('Favourites')} ({favCount})</button>}
+      {chosenCount > 0 && <button className={'chip' + (bp === '★' ? ' on' : '')} onClick={() => { setBp('★'); setSimilar(false); setEq(''); setShown(50) }}><Icon name="starFill" style={{ fontSize: 12, display: 'inline-block', marginInlineEnd: 4, verticalAlign: '-1px' }} />{t('Chosen')} ({chosenCount})</button>}
+      <button className={'chip nocap' + (!bp && !(similar && like) ? ' on' : '')} onClick={() => { setBp(''); setSimilar(false); setShown(50) }}>{t('All')}</button>
+      {BODYPARTS.map(b => <button key={b} className={'chip' + (bp === b ? ' on' : '')} onClick={() => { setBp(b); setSimilar(false); setShown(50) }}>{t(b)}</button>)}
     </div>
     {eqOpts.length > 1 && <div className="chips" ref={eqStrip} style={{ marginBottom: 10 }}>
       <button className={'chip nocap' + (!eqOn ? ' on' : '')} onClick={() => { setEq(''); setShown(50) }}>{t('Any equipment')}</button>
@@ -1171,7 +1176,7 @@ function ExercisePicker({ onPick, title, close }) {
   </>
 }
 // `title` names what the pick is for when it is not an add — the routine editor's Replace (#110).
-export const exercisePicker = (onPick, { title } = {}) => ui().openSheet(close => <ExercisePicker onPick={onPick} title={title} close={close} />)
+export const exercisePicker = (onPick, { title, like } = {}) => ui().openSheet(close => <ExercisePicker onPick={onPick} title={title} like={like} close={close} />) // fork(claude-chat-swap): `like`
 
 /** Start a safe swap for one exact active-workout occurrence. */
 export function swapActiveWorkoutExercise(index) {
@@ -1181,7 +1186,7 @@ export function swapActiveWorkoutExercise(index) {
   // The "+" on a picker row commits with the default config, exactly as it does in the add
   // flows; tapping the row still opens the config sheet first.
   // Worded for the session, not the routine: a swap changes today's workout only.
-  const picker = exercisePicker((ex, quick) => quick ? swapTo(ex, defaultConfig(ex.id)) : exConfigSheet(ex, null, cfg => swapTo(ex, cfg), null, null, null, null, t('Use in this workout')), { title: t('Swap exercise') })
+  const picker = exercisePicker((ex, quick) => quick ? swapTo(ex, defaultConfig(ex.id)) : exConfigSheet(ex, null, cfg => swapTo(ex, cfg), null, null, null, null, t('Use in this workout')), { title: t('Swap exercise'), like: exOr(active.entries[index].id) }) // fork(claude-chat-swap)
   function swapTo(ex, cfg) {
     // The picker is a chooser here, not a stack you keep adding from: one swap, then back to
     // the workout. (The add flow deliberately leaves it open.)

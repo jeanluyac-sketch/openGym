@@ -50,6 +50,7 @@ export const PT_BR_OVERRIDES = {
   'No favourites here — tap the star on an exercise to add it.': 'Sem favoritos aqui — toque na estrela de um exercício para adicioná-lo.',
   'The sets you logged for this exercise in this session will be lost.': 'As séries registradas para este exercício nesta sessão serão perdidas.',
   'Swap exercise': 'Trocar exercício',
+  'Same muscle': 'Mesmo músculo',
   'Swap exercise?': 'Trocar exercício?',
   'Logged sets stay with the original exercise. Choose where the replacement belongs.': 'As séries registradas ficam com o exercício original. Escolha onde colocar o substituto.',
   'Keep replacement in this group': 'Manter o substituto neste grupo',

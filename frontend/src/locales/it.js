@@ -109,6 +109,7 @@ export default {
   'Add to routine': 'Aggiungi alla routine',
   'Remove exercise': 'Rimuovi esercizio',
   'Swap exercise': 'Sostituisci esercizio',
+  'Same muscle': 'Stesso muscolo',
   'Swap exercise?': 'Sostituire l’esercizio?',
   'Logged sets stay with the original exercise. Choose where the replacement belongs.': 'Le serie registrate restano con l’esercizio originale. Scegli dove inserire il sostituto.',
   'Keep replacement in this group': 'Mantieni il sostituto in questo gruppo',

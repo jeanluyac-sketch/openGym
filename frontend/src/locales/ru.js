@@ -109,6 +109,7 @@ export default {
   'Add to routine': 'Добавить в программу',
   'Remove exercise': 'Убрать упражнение',
   'Swap exercise': 'Заменить упражнение',
+  'Same muscle': 'Та же мышца',
   'Swap exercise?': 'Заменить упражнение?',
   'Logged sets stay with the original exercise. Choose where the replacement belongs.': 'Записанные подходы останутся у исходного упражнения. Выберите место для замены.',
   'Keep replacement in this group': 'Оставить замену в этой группе',

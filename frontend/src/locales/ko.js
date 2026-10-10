@@ -109,6 +109,7 @@ export default {
   'Add to routine': '루틴에 추가',
   'Remove exercise': '운동 제거',
   'Swap exercise': '운동 바꾸기',
+  'Same muscle': '같은 근육',
   'Swap exercise?': '운동을 바꿀까요?',
   'Logged sets stay with the original exercise. Choose where the replacement belongs.': '기록한 세트는 원래 운동에 남습니다. 대체 운동을 넣을 위치를 선택하세요.',
   'Keep replacement in this group': '대체 운동을 이 그룹에 유지',

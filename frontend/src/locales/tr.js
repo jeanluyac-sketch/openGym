@@ -109,6 +109,7 @@ export default {
   'Add to routine': 'Rutine ekle',
   'Remove exercise': 'Egzersizi kaldır',
   'Swap exercise': 'Egzersizi değiştir',
+  'Same muscle': 'Aynı kas',
   'Swap exercise?': 'Egzersiz değiştirilsin mi?',
   'Logged sets stay with the original exercise. Choose where the replacement belongs.': 'Kaydedilen setler özgün egzersizde kalır. Yeni egzersizin nereye geleceğini seç.',
   'Keep replacement in this group': 'Yeni egzersizi bu grupta tut',

@@ -109,6 +109,7 @@ export default {
   'Add to routine': 'रूटीन में जोड़ें',
   'Remove exercise': 'व्यायाम हटाएँ',
   'Swap exercise': 'व्यायाम बदलें',
+  'Same muscle': 'वही मांसपेशी',
   'Swap exercise?': 'एक्सरसाइज़ बदलें?',
   'Logged sets stay with the original exercise. Choose where the replacement belongs.': 'रिकॉर्ड किए गए सेट मूल एक्सरसाइज़ के साथ रहेंगे। बदलने वाली एक्सरसाइज़ की जगह चुनें।',
   'Keep replacement in this group': 'बदलने वाली एक्सरसाइज़ इसी समूह में रखें',

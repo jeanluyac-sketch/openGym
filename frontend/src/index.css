@@ -954,8 +954,7 @@ body.chips-dragging *{cursor:inherit}
   transition:background var(--fast),border-color var(--fast);
 }
 .effcell-stp button{color:inherit}
-.effcell-stp>button[aria-label="Decrease"],
-.effcell-stp>button[aria-label="Increase"]{width:26px;height:44px;font-size:15px;opacity:.85;flex:0 1 auto;min-width:16px}
+.effcell-stp>button:not(.val){width:26px;height:44px;font-size:15px;opacity:.85;flex:0 1 auto;min-width:16px}
 /* the value is the tap target for the picker, so it keeps a 28 px finger's width for "8.5" and
    the −/+ shrink first — on a 368 px phone it had collapsed to 4 px under its own digits, and a
    tap on the number stepped the rating instead of opening the picker (QA C22) */
@@ -978,8 +977,7 @@ body.chips-dragging *{cursor:inherit}
 /* the same reserved widths as a plain row's, at the smaller font */
 .setrow.eff3 .stp.w,.sethead.eff3 .w-sp{--num:41px}
 .setrow.eff3 .stp.r,.sethead.eff3 .r-sp{--num:30px}
-.setrow.eff3 .effcell-stp>button[aria-label="Decrease"],
-.setrow.eff3 .effcell-stp>button[aria-label="Increase"]{width:22px}
+.setrow.eff3 .effcell-stp>button:not(.val){width:22px}
 .setrow.eff3 .effcell-stp .val{font-size:14px}
 /* effort quick picker sheet: colour-coded preset buttons, hardest (purple) first */
 /* effort picker: the ⋯-menu list with the value in the icon square, tinted per band; the
@@ -1061,8 +1059,7 @@ body.chips-dragging *{cursor:inherit}
    below is more specific and keeps the cell at 34 px. */
 @media (min-width:360px) and (max-width:365px){
   .setrow.side .effcell,.setrow.side .effcell-stp,.sethead.per-side .eff-sp{min-width:56px}
-  .setrow.side .effcell-stp>button[aria-label="Decrease"],
-  .setrow.side .effcell-stp>button[aria-label="Increase"]{min-width:12px}
+  .setrow.side .effcell-stp>button:not(.val){min-width:12px}
 }
 /* An L/R row with an effort column inside a superset in the list view sits behind three insets
    (unit, superset card, sets card): at 412 px the row is 260 px wide, and with the logged
@@ -1073,8 +1070,7 @@ body.chips-dragging *{cursor:inherit}
    fits from 430 px up, where it keeps the −/+ like the plain row above it. The 34 px floor
    belongs to the same query: on its own it clips the cell by 27 px. */
 @media (max-width:429px){
-  .wl-unit .ss-card .setrow.side .effcell-stp>button[aria-label="Decrease"],
-  .wl-unit .ss-card .setrow.side .effcell-stp>button[aria-label="Increase"]{display:none}
+  .wl-unit .ss-card .setrow.side .effcell-stp>button:not(.val){display:none}
   .wl-unit .ss-card .setrow.side .effcell,.wl-unit .ss-card .setrow.side .effcell-stp,.wl-unit .ss-card .sethead.per-side .eff-sp{min-width:34px}
 }
 /* Below 360 px a row with an effort column cannot hold three numbers and six buttons: with the
@@ -1083,7 +1079,7 @@ body.chips-dragging *{cursor:inherit}
    border), still opens the picker on tap, and the picker's exact row steps in halves as before;
    weight and reps keep their buttons. */
 @media (max-width:359px){
-  .setrow .effcell-stp>button[aria-label="Decrease"],.setrow .effcell-stp>button[aria-label="Increase"]{display:none}
+  .setrow .effcell-stp>button:not(.val){display:none}
   .setrow .effcell,.setrow .effcell-stp,.setrow.eff3 .effcell-stp,.sethead .eff-sp,
   .wl-unit .ss-card .setrow.side .effcell,.wl-unit .ss-card .setrow.side .effcell-stp,.wl-unit .ss-card .sethead.per-side .eff-sp{min-width:29px}
   .setrow .effcell-stp .val{min-width:26px}
