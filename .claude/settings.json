@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install --global rea-agents)",
+      "Bash(npm install -g rea-agents)"
+    ]
+  }
+}
