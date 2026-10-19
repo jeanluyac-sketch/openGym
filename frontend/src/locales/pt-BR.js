@@ -1403,6 +1403,21 @@ export const PT_BR_OVERRIDES = {
   'Gentle, for headphones or a quiet room.': 'Suave, para fones de ouvido ou um lugar silencioso.',
   'Fewer than two workouts in this period. Pick a longer one.': 'Menos de dois treinos neste período. Escolha um mais longo.',
   'Releases are checked on GitHub. The download is verified against its checksum before the installer opens.': 'As versões são verificadas no GitHub. O download é conferido pela soma de verificação antes de abrir o instalador.',
+  // --- activity averages ---
+  'Averages': 'Médias',
+  'Weekday': 'Dia da semana',
+  'Any day': 'Qualquer dia',
+  'All routines': 'Todas as rotinas',
+  'Average per workout': 'Média por treino',
+  'Average per training day': 'Média por dia de treino',
+  'Total': 'Total',
+  'Per day': 'Por dia',
+  'Average per workout, week by week. Dashed line: the average for the whole period.': 'Média por treino, semana a semana. Linha tracejada: a média de todo o período.',
+  'Each training day, its workouts added up. Dashed line: the average per training day.': 'Cada dia de treino, com os treinos somados. Linha tracejada: a média por dia de treino.',
+  'By weekday': 'Por dia da semana',
+  'By routine': 'Por rotina',
+  'Tap a weekday or a routine to filter by it.': 'Toque em um dia da semana ou em uma rotina para filtrar por ele.',
+  'Workouts with no recorded duration are left out.': 'Os treinos sem duração registrada ficam de fora.',
 }
 
 export default { ...pt, ...PT_BR_OVERRIDES }
