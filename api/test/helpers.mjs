@@ -54,6 +54,11 @@ export function writeState(dir, uid, S) {
 }
 
 /** A profile that has consented and has some history — the usual starting point. */
+/* The sample history is dated from today, not fixed: the Coach reads only the last 12 weeks,
+ * so a hard-coded date quietly ages out of the review window and the tests start failing. */
+function isoDaysAgo(n) { return new Date(Date.now() - n * 86400000).toISOString().slice(0, 10); }
+export const SAMPLE_DAY = isoDaysAgo(7);
+
 export function sampleState(over = {}) {
   return {
     unit: 'kg', lang: 'en', effort: 'rpe', targetW: 80,
@@ -68,10 +73,10 @@ export function sampleState(over = {}) {
     week: { 1: 'r1', 3: 'r1', 5: 'r1' },
     dayPlan: {},
     exWeights: { '0001': { w: 20 } },
-    bodyweight: [{ d: '2026-07-01', w: 78 }, { d: '2026-07-20', w: 78.5 }],
+    bodyweight: [{ d: isoDaysAgo(28), w: 78 }, { d: SAMPLE_DAY, w: 78.5 }],
     customEx: [],
     workouts: [{
-      id: 'w1', d: '2026-07-20', name: 'Full body A', start: 1000, end: 1000 + 45 * 60000, vol: 600, prs: [],
+      id: 'w1', d: SAMPLE_DAY, name: 'Full body A', start: 1000, end: 1000 + 45 * 60000, vol: 600, prs: [],
       entries: [{
         id: '0001', target: { sets: 3, reps: 10, weight: 20 },
         sets: [{ w: 20, r: 10, done: true, rpe: 9.5 }, { w: 20, r: 9, done: true, rpe: 10 }, { w: 20, r: 8, done: true, rpe: 10 }]
