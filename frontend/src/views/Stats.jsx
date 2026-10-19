@@ -3,9 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { EXIDX, matchExercise, betterWeight, isAssisted } from '../lib/exercises.js'
 import { lastBW, streakWeeks, setLabel, modeOf, effortOf, entriesForExercise, metricEntriesForExercise, metricModeForEntry, bestWeightForEntry, completedRepsOf, workoutDay, workoutAt } from '../lib/history.js'
-import { fmtNum, fmtDate, fmtVol, todayISO, isoOf, weekKey, weekStartOf, exerciseNameText } from '../lib/format.js'
+import { fmtNum, fmtDate, fmtVol, fmtDur, todayISO, isoOf, weekKey, weekStartOf, exerciseNameText, DAYN } from '../lib/format.js'
 import { speedUnitOf, speedLabel, toSpeed } from '../lib/speed.js'
-import { t, exerciseNameFor, exerciseNameClass, getLang } from '../lib/i18n.js'
+import { t, tn, exerciseNameFor, exerciseNameClass, getLang } from '../lib/i18n.js'
 import { bwSheet, goalSheet, calendarSheet, dayOverrideSheet, workoutDetailSheet, exerciseHistorySheet, WorkoutRow, bwDeltaColor, weighInsSheet } from '../sheets.jsx'
 import LineChart from '../components/LineChart.jsx'
 import Heatmap from '../components/Heatmap.jsx'
@@ -27,6 +27,7 @@ import { anchorsByWorkout, resolveSetRir } from '../lib/recovery.js'
 import { Button, Segmented, SelectRow } from '../components/ui.jsx'
 import { tappable } from '../lib/use-sheet-keyboard.js'
 import { isWarmupRow } from '../lib/workout-model.js'
+import { activitySessions, filterSessions, activitySummary, perDaySeries, weeklyAverageSeries, byWeekday, byRoutine } from '../lib/activity-stats.js'
 
 // Set 1 to 5 on the per-set chart — system colours, so each line keeps its hue in dark mode.
 const SET_COLORS = ['var(--blue)', 'var(--green)', 'var(--orange)', 'var(--purple)', 'var(--pink)']
@@ -377,6 +378,80 @@ function EffortCard({ S }) {
   </div>
 }
 
+// Under the heatmap: the same time (or volume) as averages and curves, filtered by weekday and
+// by routine — "how long does Leg day take", "are Mondays shorter". Numbers in lib/activity-stats.js.
+function ActivityBreakdown({ S, metric }) {
+  const [range, setRange] = useState(0)
+  const [weekday, setWeekday] = useState(null)
+  const [routine, setRoutine] = useState(null)
+  const [chart, setChart] = useState('day')
+  const ws = weekStartOf(S)
+  const from = useMemo(() => rangeStart(range), [range])
+  const { sessions, skipped } = useMemo(() => activitySessions(S.workouts, S.routines, metric), [S.workouts, S.routines, metric])
+  const inRange = useMemo(() => filterSessions(sessions, { from }), [sessions, from])
+  // Each breakdown is filtered by the other filter only, so its rows stay there to pick from.
+  const routines = byRoutine(filterSessions(inRange, { weekday }))
+  const cur = routines.some(r => r.key === routine) ? routine : null
+  const weekdays = byWeekday(filterSessions(inRange, { routine: cur }), ws)
+  const shown = useMemo(() => filterSessions(inRange, { weekday, routine: cur }), [inRange, weekday, cur])
+  const sum = activitySummary(shown)
+  const points = useMemo(() => (chart === 'week' ? weeklyAverageSeries(shown, ws) : perDaySeries(shown)).map(p => ({
+    t: p.t, d: p.d, y: metric === 'vol' ? p.y : Math.round(p.y), note: tn('{0} workout', '{0} workouts', p.n),
+  })), [shown, chart, ws, metric])
+  if (!sessions.length) return null
+  const fmt = v => (v == null ? '–' : metric === 'vol' ? fmtVol(Math.round(v), S.unit) : fmtDur(v * 60000))
+  const labelOf = r => r.label || t('Freestyle')
+  const maxDay = Math.max(0, ...weekdays.map(r => r.avg || 0))
+  const maxRoutine = Math.max(0, ...routines.map(r => r.avg))
+  const avgLine = chart === 'week' ? sum.perWorkout : sum.perDay
+
+  return <div data-activity-breakdown style={{ marginTop: 14 }}>
+    <h4 className="sec">{t(metric === 'vol' ? 'Volume' : 'Time')} · {t('Averages')}</h4>
+    <Segmented className="seg-range" value={range} onChange={setRange} options={rangeOptions()} />
+    <div className="sect-b" style={{ marginBottom: 10 }}>
+      <SelectRow title={t('Weekday')} value={weekday} onChange={setWeekday}
+        options={[{ value: null, label: t('Any day') }, ...weekdays.map(r => ({ value: r.wd, label: t(DAYN[r.wd]) }))]} />
+      <SelectRow title={t('Routine')} value={cur} onChange={setRoutine}
+        options={[{ value: null, label: t('All routines') }, ...routines.map(r => ({ value: r.key, label: labelOf(r) }))]} />
+    </div>
+    {!shown.length ? <div className="muted small">{t('No workouts in this period yet.')}</div> : <>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10 }}>
+        {[[sum.perWorkout, t('Average per workout')], [sum.perDay, t('Average per training day')],
+          [sum.total, t('Total') + ' · ' + tn('{0} workout', '{0} workouts', sum.n)]].map(([v, label]) => <div key={label}>
+          <div className="stat-v" style={{ fontSize: 18, whiteSpace: 'nowrap' }}>{fmt(v)}</div>
+          <div className="small dim">{label}</div>
+        </div>)}
+      </div>
+      <div style={{ height: 10 }} />
+      <Segmented className="seg-range" value={chart} onChange={setChart}
+        options={[{ value: 'day', label: t('Per day') }, { value: 'week', label: t('Weekly average') }]} />
+      <div className="chart"><LineChart points={points} h={140} unit={metric === 'vol' ? S.unit : t('min')} color="var(--acc)"
+        goal={avgLine == null ? null : Math.round(avgLine)} /></div>
+      <div className="small dim" style={{ marginTop: 4 }}>{t(chart === 'week' ? 'Average per workout, week by week. Dashed line: the average for the whole period.' : 'Each training day, its workouts added up. Dashed line: the average per training day.')}</div>
+    </>}
+    <h4 className="sec" style={{ marginTop: 12 }}>{t('By weekday')}</h4>
+    {weekdays.map(r => <div key={r.wd} className="mrow" style={{ cursor: r.n ? 'pointer' : undefined }}
+      {...tappable(r.n ? () => setWeekday(w => (w === r.wd ? null : r.wd)) : undefined)}>
+      <span className="nm">{weekday === r.wd ? <b>{t(DAYN[r.wd])}</b> : t(DAYN[r.wd])}</span>
+      <span className="bar"><i style={{ width: (r.avg && maxDay ? Math.round(r.avg / maxDay * 100) : 0) + '%' }} /></span>
+      <span className="v">{r.n ? fmt(r.avg) + ' · ' + r.n + '×' : '–'}</span>
+    </div>)}
+    {routines.length > 0 && <>
+      <h4 className="sec" style={{ marginTop: 12 }}>{t('By routine')}</h4>
+      {routines.map(r => <div key={r.key} className="mrow" style={{ cursor: 'pointer' }}
+        {...tappable(() => setRoutine(k => (k === r.key ? null : r.key)))}>
+        <span className="nm">{cur === r.key ? <b>{labelOf(r)}</b> : labelOf(r)}</span>
+        <span className="bar"><i style={{ width: (maxRoutine ? Math.round(r.avg / maxRoutine * 100) : 0) + '%' }} /></span>
+        <span className="v">{fmt(r.avg) + ' · ' + r.n + '×'}</span>
+      </div>)}
+    </>}
+    <div className="small dim" style={{ marginTop: 8 }}>
+      {t('Tap a weekday or a routine to filter by it.')}
+      {metric === 'time' && skipped > 0 ? ' ' + t('Workouts with no recorded duration are left out.') : ''}
+    </div>
+  </div>
+}
+
 // Stats = the analytics hub: all charts, progress and history live here.
 // The muscle volume your plan programs in a week: every weekday routine once, plus each session
 // of a running rotation (lib/muscles.js loadOfWeeklyPlan). It used to sit on Plan; it is analysis,
@@ -652,6 +727,7 @@ export default function Stats() {
         onMetricChange={metric => useStore.getState().update(s => { s.heatmapMetric = metric })}
         onDay={iso => { const ws = workouts.filter(w => workoutDay(w) === iso); if (ws.length === 1) workoutDetailSheet(ws[0]); else if (ws.length) calendarSheet(iso); else dayOverrideSheet(iso) }}
       />
+      <ActivityBreakdown S={S} metric={S.heatmapMetric === 'vol' ? 'vol' : 'time'} />
     </div>
 
     {(workouts.length > 0 || Object.keys(loadOfWeeklyPlan(S)).length > 0) && <MuscleBalance S={S} />}
