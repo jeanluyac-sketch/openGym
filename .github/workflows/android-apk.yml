@@ -48,10 +48,11 @@ jobs:
       - name: Build
         working-directory: frontend
         env:
-          JAVA_HOME: ${{ env.JAVA_HOME_21_X64 }}
           GRADLE_OPTS: -Dorg.gradle.daemon=false
         run: |
           set -eu
+          # Capacitor 8 compiles for Java 21; the runner's default JDK is older.
+          export JAVA_HOME="$JAVA_HOME_21_X64"
           npm ci
           npm run build:mobile
           cd android
