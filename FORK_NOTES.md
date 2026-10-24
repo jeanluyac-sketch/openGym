@@ -1,8 +1,9 @@
 # Notas do fork
 
 Este repositório é um fork de [DuarteSantos8/openGym](https://github.com/DuarteSantos8/openGym)
-com um único recurso a mais: **Coach pelo chat do Claude** (conector MCP remoto com OAuth),
-descrito em [docs/CLAUDE_CHAT.md](docs/CLAUDE_CHAT.md). Licença: AGPL-3.0-or-later, como o original;
+com recursos a mais: **Coach pelo chat do Claude** (conector MCP remoto com OAuth),
+descrito em [docs/CLAUDE_CHAT.md](docs/CLAUDE_CHAT.md); a **análise do tempo de treino** no cartão
+Atividade das Estatísticas; e um **APK próprio** para Android. Licença: AGPL-3.0-or-later, como o original;
 o código-fonte deste fork é público aqui.
 
 ## Regra de ouro
@@ -18,7 +19,8 @@ Cada linha alterada num arquivo do original é marcada com `fork(claude-chat)`.
 | `api/coach/config.js` | Provedor `claude-chat` na tabela `PROVIDERS` (logo abaixo de `fixture`, com `chatOnly: true`) e `|| providerMeta(cfg).chatOnly` nos testes de `fixture` em `credentialFor()` e `isConnected()`. | Recoloque a linha da tabela e as duas condições. |
 | `api/coach/adapters/index.js` | Adaptador `chatOnly` que não roda nada, registrado como `'claude-chat'` em `ADAPTERS`. | Recoloque o objeto e a chave. |
 | `api/coach/core/validate.js` | Em `validatePlan()`, uma linha aceita `restSec` (15–600 s) por exercício, logo após a linha do `sg`. | Recoloque a linha. |
-| `frontend/src/lib/plates.js` | 2 kg e 3 kg acrescentados a `PLATE_SIZES.kg` (aparecem no editor de Anilhas) e a `UNCOMMON.kg`, pra o rack padrão não mudar. Marcado com `fork(claude-chat-plates)`. Teste em `plates.test.js`. | Mantenha a lista do original e acrescente `2` e `3` nas duas listas. |
+| `frontend/src/lib/plates.js` | 3 kg acrescentado a `PLATE_SIZES.kg` (aparece no editor de Anilhas) e a `UNCOMMON.kg`, pra o rack padrão não mudar. Desde a v1.4.2 o original já tem 2, 1,5 e 1 kg. Marcado com `fork(claude-chat-plates)`. Testes em `plates.test.js` (incluindo o teste do original "change plates beyond the standard set", que lista o 3). | Mantenha a lista do original e acrescente `3` nas duas listas e no teste. |
+| `frontend/src/views/Stats.jsx` e `frontend/src/locales/*.js` | Análise de tempo/volume sob o mapa de Atividade (médias, curvas, por dia da semana e por rotina, filtros); números em `lib/activity-stats.js`. As frases novas ficam num bloco `// --- activity averages ---` em cada idioma. | Nos idiomas, mantenha os dois blocos (o do fork e o do original). No `Stats.jsx`, recoloque o import de `activity-stats.js` e o cartão. |
 | `frontend/src/index.css` | Os botões −/+ da célula de RIR/RPE eram achados por `[aria-label="Decrease"]`/`[aria-label="Increase"]` (texto em inglês); em português o "+" ficava cortado. Agora `>button:not(.val)`, marcado com `/* fork(claude-chat) */`. | Aceite o original e troque cada par de seletores `[aria-label="Decrease"]`, `[aria-label="Increase"]` por um único `>button:not(.val)`. |
 | `api/coach/jobs.js` | Em `enqueue()`, primeira linha recusa jobs quando o provedor é `chatOnly` (`CoachError('chat', CHAT_ONLY_MESSAGE)`). Função nova `submitProposal()` antes da seção `decisions`. Usa `readUser`, `writeUser`, `inflight`, `onProposal`, `hashPlan`, `payloadLib.canonicalPlan`, `PENDING_DAYS`, `HISTORY_MAX`, `CoachError`. | Aceite a versão do original e recoloque a função. Se o formato de `pending` mudou em `execute()`, copie o novo formato (é o mesmo objeto, sem a parte do provedor). |
 
@@ -35,6 +37,11 @@ Cada linha alterada num arquivo do original é marcada com `fork(claude-chat)`.
   ferramentas), `pages.js` (páginas de login/consentimento/conexões).
 - `api/test/chat-bridge.test.js`, `api/test/chat-bridge-store.test.js`.
 - `.github/workflows/fork-sync.yml` — sincronização semanal com o original.
+- `.github/workflows/android-apk.yml` — APK assinado do fork (artefato `openGym-fork-apk`), a cada
+  push em `main` que mexa em `frontend/` ou sob demanda. O app instala ao lado do oficial
+  (`ch.duartesantos.opengym.fork`, nome "openGym+") e procura atualizações nas releases deste fork.
+  A chave fica no PC do dono (`%USERPROFILE%\.opengym-fork\`) e nos secrets `ANDROID_KEYSTORE_*`.
+- `frontend/src/lib/activity-stats.js` e o teste ao lado.
 - `docs/CLAUDE_CHAT.md`, `FORK_NOTES.md`.
 
 `api/Dockerfile` não precisa mudar: ele já copia `coach/` inteiro.

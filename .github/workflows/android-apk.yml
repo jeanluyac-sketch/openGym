@@ -1,0 +1,84 @@
+# fork(android-apk) — builds this fork's own signed Android APK.
+#
+# The original builds its APK on GitLab with its own key; this fork cannot use that key, so its
+# APK is a separate app beside the official one: applicationId `ch.duartesantos.opengym.fork`,
+# label "openGym+", and the in-app updater pointed at this fork's releases (none yet = no prompt),
+# so it never offers to replace itself with the official APK. Those three are rewritten in the CI
+# checkout only; the source files stay the original's.
+#
+# Secrets (the keystore lives on the owner's PC; same key every build, or updates are refused):
+#   ANDROID_KEYSTORE_B64       base64 of the .jks
+#   ANDROID_KEYSTORE_PASSWORD  store and key password
+#   ANDROID_KEY_ALIAS          key alias
+name: Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['frontend/**']
+
+concurrency:
+  group: android-apk
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    if: github.repository != 'DuarteSantos8/openGym'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Make it the fork's app
+        run: |
+          set -eu
+          sed -i 's/applicationId "ch.duartesantos.opengym"/applicationId "ch.duartesantos.opengym.fork"/' frontend/android/app/build.gradle
+          sed -i 's#<string name="app_name">openGym</string>#<string name="app_name">openGym+</string>#' frontend/android/app/src/main/res/values/strings.xml
+          sed -i "s#^const REPO = 'DuarteSantos8/openGym'#const REPO = '${{ github.repository }}'#" frontend/src/lib/update.js
+          grep -q 'opengym.fork"' frontend/android/app/build.gradle
+          grep -q "const REPO = '${{ github.repository }}'" frontend/src/lib/update.js
+
+      - name: Build
+        working-directory: frontend
+        env:
+          JAVA_HOME: ${{ env.JAVA_HOME_21_X64 }}
+          GRADLE_OPTS: -Dorg.gradle.daemon=false
+        run: |
+          set -eu
+          npm ci
+          npm run build:mobile
+          cd android
+          ./gradlew --no-daemon assembleSideloadRelease
+
+      - name: Sign
+        env:
+          ANDROID_KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          set -eu
+          VER="$(node -p "require('./frontend/package.json').version")"
+          UNSIGNED=frontend/android/app/build/outputs/apk/sideload/release/app-sideload-release-unsigned.apk
+          BT="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)"
+          echo "$ANDROID_KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/ks.jks"
+          "$BT/zipalign" -f -p 4 "$UNSIGNED" "$RUNNER_TEMP/aligned.apk"
+          OUT="openGym-fork-$VER.apk"
+          "$BT/apksigner" sign --ks "$RUNNER_TEMP/ks.jks" \
+            --ks-pass env:ANDROID_KEYSTORE_PASSWORD --ks-key-alias "$ANDROID_KEY_ALIAS" \
+            --key-pass env:ANDROID_KEYSTORE_PASSWORD --out "$OUT" "$RUNNER_TEMP/aligned.apk"
+          rm -f "$RUNNER_TEMP/ks.jks"
+          "$BT/apksigner" verify --print-certs "$OUT"
+          sha256sum "$OUT" > "$OUT.sha256"
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: openGym-fork-apk
+          path: openGym-fork-*.apk*
+          retention-days: 30
